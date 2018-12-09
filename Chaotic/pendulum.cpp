@@ -14,35 +14,35 @@
 
 using namespace std;
 #define g 9.8
-#define h 0.01
+#define h 0.001
 
 VectorXd process_y;
 
 class Pendulum{
 private:
     int t;
-    double l, mass, theta_0;
-    VectorXd M, y;
+    VectorXd M, y, l;
     VectorXd derivs(VectorXd state);
 public:
     int n;
-    Pendulum(int n, int t, double l, double mass, double theta_0);
+    Pendulum(int _n, int N, VectorXd _l, VectorXd m, VectorXd y_0);
     ~Pendulum();
     void next_step();
     VectorXd current();
 };
 
-Pendulum::Pendulum(int _n, int N, double _l, double _mass, double _theta_0){
+Pendulum::Pendulum(int _n, int N, VectorXd _l, VectorXd m, VectorXd y_0){
+    double sum_of_mass = 0;
     n = _n;
-    l = _l;
-    mass = _mass;
     M.resize(n);
     y.resize(2*n);
+    l.resize(n);
     for(int i=0;i<n;i++){
-        M(i) = (n-i)*mass;
-        y(i) = theta_0;
-        y(n+i) = 0;
+        sum_of_mass += m(n-1-i);
+        M(n-1-i) = sum_of_mass;
     }
+    l = _l;
+    y = y_0;
     for(int cnt=0;cnt<N;cnt++){
         next_step();
     }
@@ -69,17 +69,17 @@ VectorXd Pendulum::derivs(VectorXd state){
     for(int i=0;i<n;i++){
         b(i) = 0;
         for(int j=0;j<i;j++){
-            A(i,j) = M(i)*l*l*cos(state(j)-state(i));
+            A(i,j) = M(i)*l(i)*l(j)*cos(state(j)-state(i));
             A(j,i) = A(i,j);
-            b[i] += M(i)*l*sin(state[j]-state[i])*state(n+j)*state(n+j);
+            b[i] += M(i)*l(j)*sin(state[j]-state[i])*state(n+j)*state(n+j);
         }
+        A(i,i) = M(i)*l(i)*l(i);
         
-        A(i,i) = M(i)*l*l;
-        for(int j=i;j<n;j++){
-            b(i) += M(j)*l*sin(state[j]-state[i])*state(n+j)*state(n+j);
+        for(int j=i+1;j<n;j++){
+            b(i) += M(j)*l(j)*sin(state[j]-state[i])*state(n+j)*state(n+j);
         }
         omega(i)=state(n+i);
-        b(i) = b(i)*l-M(i)*g*l*sin(state[i]);
+        b(i) = b(i)*l(i)-M(i)*g*l(i)*sin(state[i]);
     }
     A << A.inverse();
     b << A*b;
@@ -119,18 +119,19 @@ unif01_Gen *CreatePendulum(int n, void *par){
     int *state;
     size_t leng;
     char name[60];
-    VectorXd y = VectorXd(2*n);
+    VectorXd y(2*n), _l(2*n), _m(n), y_0(2*n);
     Pendulum *pen;
     gen = (unif01_Gen *) malloc(sizeof(unif01_Gen));
-    pen = new Pendulum(init_param->n, init_param->N, init_param->l,
-                                 init_param->mass, init_param->theta_0);
+    pen = new Pendulum(init_param->n, init_param->N, *(init_param->_l),
+                                 *(init_param->_m), *(init_param->y_0));
     gen->state = state = (int*) malloc(sizeof(int));
     *state = 0;
     gen->param = pen;
     gen->Write = WritePendulum;
     gen->GetU01 = Pendulum_U01;
     gen->GetBits = Pendulum_Bits;
-    strcpy(name, "n-Pendulum System"); // TODO add str int
+    strcpy(name, "n-Pendulum System");
+    // TODO add str int
     leng = strlen(name);
     gen->name = (char *) calloc(leng+1, sizeof(char));
     strncpy(gen->name, name, leng);

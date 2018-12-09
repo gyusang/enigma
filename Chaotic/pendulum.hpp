@@ -20,7 +20,7 @@ void DeletePendulum (unif01_Gen *gen);
 
 typedef struct {
     int n, N;
-    double l, mass, theta_0;
+    VectorXd *_l, *_m, *y_0;
 } pendulum_init_param;
 
 
