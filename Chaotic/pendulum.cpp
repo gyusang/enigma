@@ -113,17 +113,22 @@ static void WritePendulum (void *sta){
     cout << "order : " << *state << endl;
 }
 
-unif01_Gen *CreatePendulum(int n, void *par){
-    pendulum_init_param * init_param = (pendulum_init_param *) par;
+unif01_Gen *CreatePendulum(int n, int N, double theta_0, double l_0){
     unif01_Gen *gen;
     int *state;
     size_t leng;
     char name[60];
-    VectorXd y(2*n), _l(2*n), _m(n), y_0(2*n);
+    VectorXd _l(2*n), _m(n), y_0(2*n);
     Pendulum *pen;
+    for(int i=0;i<n;i++){
+        _l(i) = l_0;
+        _m(i) = 1;
+        y_0(i) = theta_0;
+        y_0(n+i) = 0;
+    }
+    
     gen = (unif01_Gen *) malloc(sizeof(unif01_Gen));
-    pen = new Pendulum(init_param->n, init_param->N, *(init_param->_l),
-                                 *(init_param->_m), *(init_param->y_0));
+    pen = new Pendulum(n, N, _l, _m, y_0);
     gen->state = state = (int*) malloc(sizeof(int));
     *state = 0;
     gen->param = pen;

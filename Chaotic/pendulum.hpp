@@ -15,14 +15,8 @@ extern "C"{
 #include "Eigen/Dense"
 using namespace Eigen;
 
-unif01_Gen *CreatePendulum(int n, void *par);
+unif01_Gen *CreatePendulum(int n, int N, double theta_0, double l_0);
 void DeletePendulum (unif01_Gen *gen);
-
-typedef struct {
-    int n, N;
-    VectorXd *_l, *_m, *y_0;
-} pendulum_init_param;
-
 
 #endif /* pendulum_hpp */
 
