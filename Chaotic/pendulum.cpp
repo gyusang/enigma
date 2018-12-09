@@ -16,7 +16,7 @@ using namespace std;
 #define g 9.8
 #define h 0.01
 
-VectorXd y;
+VectorXd process_y;
 
 class Pendulum{
 private:
@@ -28,49 +28,42 @@ public:
     int n;
     Pendulum(int n, int t, double l, double mass, double theta_0);
     ~Pendulum();
-    VectorXd next_step();
+    void next_step();
     VectorXd current();
 };
 
-Pendulum::Pendulum(int n, int N, double l, double mass, double theta_0){
-    this->n = n;
-    this->t = t;
-    this->l = l;
-    this->mass = mass;
-    (this->M).resize(n);
-    (this->y).resize(2*n);
+Pendulum::Pendulum(int _n, int N, double _l, double _mass, double _theta_0){
+    n = _n;
+    l = _l;
+    mass = _mass;
+    M.resize(n);
+    y.resize(2*n);
     for(int i=0;i<n;i++){
-        (this->M)(i) = (n-i)*mass;
-        (this->y)(i) = theta_0;
-        (this->y)(n+i) = 0;
+        M(i) = (n-i)*mass;
+        y(i) = theta_0;
+        y(n+i) = 0;
     }
     for(int cnt=0;cnt<N;cnt++){
-        this->next_step();
+        next_step();
     }
-    //TODO Do Initial Run Until t
 }
 
 Pendulum::~Pendulum(){
-    (this->M).resize(0);
-    (this->y).resize(0);
+    M.resize(0);
+    y.resize(0);
 }
 
-VectorXd Pendulum::next_step(){
-    int n = this->n;
-    VectorXd y(2*n), y_2(2*n);
-    y << this->y;
+void Pendulum::next_step(){
+    VectorXd y_2(2*n);
     y_2 = y + h * derivs(y) / 2;
     y = y + h * derivs(y_2);
-    this->y = y;
-    return y;
 }
 
 VectorXd Pendulum::current(){
-    return this->y;
+    return y;
 }
 
 VectorXd Pendulum::derivs(VectorXd state){
-    int n = this->n;
     MatrixXd A(n,n);
     VectorXd b(n),x(2*n), omega(n);
     for(int i=0;i<n;i++){
@@ -99,14 +92,13 @@ static double Pendulum_U01(void *par, void *sta){
     double result;
     int *state = (int *) sta;
     Pendulum *pen = (Pendulum *) par;
-    y.resize(pen->n);
+    process_y.resize(pen->n);
     if(*state % pen->n == 0){
         *state = 0;
-        y = pen->next_step();
-    } else{
-        y = pen->current();
+        pen->next_step();
     }
-    result = abs(y(*state));
+    process_y = pen->current();
+    result = abs(process_y(*state));
     result *= 10000;
     *state += 1;
     return fmod(result, 1);
