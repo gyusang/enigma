@@ -7,6 +7,7 @@
 //
 
 #include "pendulum.hpp"
+#include "bbattery.h"
 #include <iostream>
 #include <stdlib.h>
 using namespace std;
@@ -19,9 +20,8 @@ int main()
     theta_0 = M_PI*theta_0/180;
 
     unif01_Gen *gen = CreatePendulum(n, 10000, theta_0, l_0);
-    cout.precision(15);
-    for(int i=0;i<10;i++){
-        cout << gen->GetU01(gen->param, gen->state) << endl;
-    }
+    bbattery_SmallCrush(gen);
+    DeletePendulum(gen);
+    
     return 0;
 }

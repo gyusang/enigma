@@ -147,7 +147,6 @@ void DeletePendulum (unif01_Gen *gen){
     Pendulum *pen = (Pendulum *) gen->param;
     delete pen;
     free(gen->state);
-    free(gen->param);
     free(gen->name);
     free(gen);
 }
