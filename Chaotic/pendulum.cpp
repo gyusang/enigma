@@ -16,6 +16,8 @@ using namespace std;
 #define g 9.8
 #define h 0.001
 
+const static IOFormat CSVFormat(11, DontAlignCols, ", ", ", ", "", "", "", "\n");
+
 VectorXd process_y;
 
 class Pendulum{
@@ -57,6 +59,9 @@ void Pendulum::next_step(){
     VectorXd y_2(2*n);
     y_2 = y + h * derivs(y) / 2;
     y = y + h * derivs(y_2);
+    for(int i=0;i<n;i++){
+        y(i) = fmod(y(i), MY_2_PI);
+    }
 }
 
 VectorXd Pendulum::current(){
@@ -87,20 +92,25 @@ VectorXd Pendulum::derivs(VectorXd state){
     return x;
 }
 
+typedef struct {
+    int order;
+    double t;
+} pendulum_state;
 
 static double Pendulum_U01(void *par, void *sta){
     double result;
-    int *state = (int *) sta;
+    pendulum_state *state = (pendulum_state *) sta;
     Pendulum *pen = (Pendulum *) par;
     process_y.resize(pen->n);
-    if(*state % pen->n == 0){
-        *state = 0;
+    if(state->order % pen->n == 0){
+        state->order = 0;
+        state->t += h;
         pen->next_step();
     }
     process_y = pen->current();
-    result = abs(process_y(*state));
+    result = abs(process_y(state->order));
     result *= 10000;
-    *state += 1;
+    state->order += 1;
     return fmod(result, 1);
 }
 
@@ -109,13 +119,14 @@ static unsigned long Pendulum_Bits (void *par, void *sta){
 }
 
 static void WritePendulum (void *sta){
-    int *state = (int *) sta;
-    cout << "order : " << *state << endl;
+    pendulum_state *state = (pendulum_state *) sta;
+    cout << "t : " << state->t << endl;
+    cout << "y : " << process_y.format(CSVFormat) << endl;
 }
 
 unif01_Gen *CreatePendulum(int n, int N, double theta_0, double l_0){
     unif01_Gen *gen;
-    int *state;
+    pendulum_state *state;
     size_t leng;
     char name[60];
     VectorXd _l(2*n), _m(n), y_0(2*n);
@@ -129,8 +140,10 @@ unif01_Gen *CreatePendulum(int n, int N, double theta_0, double l_0){
     
     gen = (unif01_Gen *) malloc(sizeof(unif01_Gen));
     pen = new Pendulum(n, N, _l, _m, y_0);
-    gen->state = state = (int*) malloc(sizeof(int));
-    *state = 0;
+    process_y = pen->current();
+    gen->state = state = (pendulum_state *) malloc(sizeof(pendulum_state));
+    state->order = 0;
+    state->t = N*h;
     gen->param = pen;
     gen->Write = WritePendulum;
     gen->GetU01 = Pendulum_U01;

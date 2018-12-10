@@ -24,3 +24,5 @@ void DeletePendulum (unif01_Gen *gen);
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
 #endif
+
+#define MY_2_PI 6.2831853071795862319959
