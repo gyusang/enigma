@@ -60,7 +60,12 @@ void Pendulum::next_step(){
     y_2 = y + h * derivs(y) / 2;
     y = y + h * derivs(y_2);
     for(int i=0;i<n;i++){
-        y(i) = fmod(y(i), MY_2_PI);
+        while(y(i)>M_PI){
+            y(i) -= MY_2_PI;
+        }
+        while(y(i)<-M_PI){
+            y(i) += MY_2_PI;
+        }
     }
 }
 
